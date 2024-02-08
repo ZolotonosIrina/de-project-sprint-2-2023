@@ -118,20 +118,20 @@ WITH dwh_delta AS ( -- определяем, какие данные были и
                          (SELECT
                             dd.customer_id,
                             dd.product_type,
-                            RANK() OVER(PARTITION BY dd.customer_id ORDER BY COUNT(product_id) DESC) AS rank_count_product
+                            ROW_NUMBER() OVER(PARTITION BY dd.customer_id ORDER BY COUNT(product_id) DESC) AS row_count_product
                             FROM dwh_delta AS dd
                         GROUP BY dd.customer_id, dd.product_type) T31
-                      WHERE rank_count_product = 1) AS T3 ON T2.customer_id = T3.customer_id
+                      WHERE row_count_product = 1) AS T3 ON T2.customer_id = T3.customer_id
             INNER JOIN  -- Эта выборка поможет определить самого популярного мастера у заказчика.
                      (SELECT customer_id, craftsman_id
                       FROM
                          (SELECT
                             dd.customer_id,
                             dd.craftsman_id,
-                            RANK() OVER(PARTITION BY dd.customer_id ORDER BY COUNT(order_id) DESC) AS rank_count_order_by_craftsman
+                            ROW_NUMBER() OVER(PARTITION BY dd.customer_id ORDER BY COUNT(order_id) DESC) AS row_count_order_by_craftsman
                             FROM dwh_delta AS dd
                         GROUP BY dd.customer_id, dd.craftsman_id) T41
-                      WHERE rank_count_order_by_craftsman = 1) AS T4 ON T2.customer_id = T4.customer_id
+                      WHERE row_count_order_by_craftsman = 1) AS T4 ON T2.customer_id = T4.customer_id
             ORDER BY report_period),
     dwh_delta_update_result AS ( -- делаем перерасчёт для существующих записей витрины.
         SELECT
@@ -198,20 +198,20 @@ WITH dwh_delta AS ( -- определяем, какие данные были и
                           (SELECT
                                dd.customer_id,
                                dd.product_type,
-                               RANK() OVER(PARTITION BY dd.customer_id ORDER BY COUNT(product_id) DESC) AS rank_count_product
+                               ROW_NUMBER() OVER(PARTITION BY dd.customer_id ORDER BY COUNT(product_id) DESC) AS row_count_product
                            FROM dwh_delta AS dd
                            GROUP BY dd.customer_id, dd.product_type) T31
-                      WHERE rank_count_product = 1) AS T3 ON T2.customer_id = T3.customer_id
+                      WHERE row_count_product = 1) AS T3 ON T2.customer_id = T3.customer_id
                 INNER JOIN  -- Эта выборка поможет определить самого популярного мастера у заказчика.
                      (SELECT customer_id, craftsman_id
                       FROM
                           (SELECT
                                dd.customer_id,
                                dd.craftsman_id,
-                               RANK() OVER(PARTITION BY dd.customer_id ORDER BY COUNT(order_id) DESC) AS rank_count_order_by_craftsman
+                               ROW_NUMBER() OVER(PARTITION BY dd.customer_id ORDER BY COUNT(order_id) DESC) AS row_count_order_by_craftsman
                            FROM dwh_delta AS dd
                            GROUP BY dd.customer_id, dd.craftsman_id) T41
-                      WHERE rank_count_order_by_craftsman = 1) AS T4 ON T2.customer_id = T4.customer_id
+                      WHERE row_count_order_by_craftsman = 1) AS T4 ON T2.customer_id = T4.customer_id
                  ORDER BY report_period
     ),
     insert_delta AS ( -- выполняем insert новых расчитанных данных для витрины
